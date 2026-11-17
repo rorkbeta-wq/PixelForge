@@ -1,4 +1,5 @@
 import {
+  screenToWorld,
   worldToScreen,
   type ProjectionConfig,
   type WorldPoint
@@ -25,7 +26,7 @@ export function drawIsometricGrid(
     cameraY,
     zoom,
     projection,
-    extent = 40
+    extent: extraExtent = 4
   } = options;
 
   context.save();
@@ -35,13 +36,28 @@ export function drawIsometricGrid(
   context.translate(width / 2 + cameraX, height / 2 + cameraY);
   context.scale(zoom, zoom);
 
+  const center = screenToWorld({
+    x: -cameraX / zoom,
+    y: -cameraY / zoom
+  }, projection);
+  const visibleExtent = Math.ceil(
+    (width + height) / (Math.min(projection.tileWidth, projection.tileHeight) * zoom)
+  ) + extraExtent;
+  const startX = Math.floor(center.x) - visibleExtent;
+  const endX = Math.ceil(center.x) + visibleExtent;
+  const startY = Math.floor(center.y) - visibleExtent;
+  const endY = Math.ceil(center.y) + visibleExtent;
+
   context.lineWidth = 1 / zoom;
   context.strokeStyle = "rgba(133, 157, 112, 0.24)";
   context.beginPath();
 
-  for (let index = -extent; index <= extent; index += 1) {
-    traceWorldLine(context, { x: index, y: -extent, z: 0 }, { x: index, y: extent, z: 0 }, projection);
-    traceWorldLine(context, { x: -extent, y: index, z: 0 }, { x: extent, y: index, z: 0 }, projection);
+  for (let x = startX; x <= endX; x += 1) {
+    traceWorldLine(context, { x, y: startY, z: 0 }, { x, y: endY, z: 0 }, projection);
+  }
+
+  for (let y = startY; y <= endY; y += 1) {
+    traceWorldLine(context, { x: startX, y, z: 0 }, { x: endX, y, z: 0 }, projection);
   }
 
   context.stroke();
