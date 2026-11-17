@@ -61,7 +61,7 @@ export async function saveStoredAsset(
   const bitmap = await createImageBitmap(file);
   const manifest: AssetManifestEntry = {
     id: crypto.randomUUID(),
-    name: file.name.replace(/\\.png$/i, "") || "Untitled asset",
+    name: file.name.replace(/\.png$/i, "") || "Untitled asset",
     category,
     mimeType: "image/png",
     width: bitmap.width,
@@ -82,6 +82,25 @@ export async function saveStoredAsset(
     const request = store.put(stored);
     request.onsuccess = () => resolve(stored);
     request.onerror = () => reject(new Error("Unable to save the imported asset."));
+  });
+  return stored;
+}
+
+export async function saveGeneratedAsset(
+  blob: Blob,
+  manifest: AssetManifestEntry
+): Promise<StoredAsset> {
+  if (blob.type !== "image/png") {
+    throw new Error("Generated assets must be PNG images.");
+  }
+  const stored: StoredAsset = {
+    manifest,
+    blob: blob.slice(0, blob.size, "image/png")
+  };
+  await runTransaction("readwrite", (store, resolve, reject) => {
+    const request = store.put(stored);
+    request.onsuccess = () => resolve(stored);
+    request.onerror = () => reject(new Error("Unable to save the generated asset."));
   });
   return stored;
 }

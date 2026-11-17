@@ -30,9 +30,9 @@ export function drawTileMap(context: CanvasRenderingContext2D, options: MapRende
         worldToScreen({ x, y: y + 1, z: 0 }, projection)
       ];
       context.beginPath();
-      context.moveTo(corners[0].x, corners[0].y);
+      context.moveTo(corners[0]!.x, corners[0]!.y);
       for (let index = 1; index < corners.length; index += 1) {
-        context.lineTo(corners[index].x, corners[index].y);
+        context.lineTo(corners[index]!.x, corners[index]!.y);
       }
       context.closePath();
       const tileId = map.tiles[y * map.width + x];
