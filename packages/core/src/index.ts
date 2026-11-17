@@ -10,3 +10,15 @@ export type {
   ScreenPoint,
   WorldPoint
 } from "./projection";
+
+export {
+  createProject,
+  isPixelForgeProject,
+  PROJECT_FORMAT_VERSION
+} from "./project";
+
+export type {
+  CreateProjectOptions,
+  PixelForgeProject,
+  ProjectSettings
+} from "./project";
