@@ -8,7 +8,7 @@ export interface GeneratedSprite {
   readonly species: string;
   readonly stage: string;
   readonly profileId: string;
-  readonly seed: number | string;
+  readonly seed: number;
   readonly width: number;
   readonly height: number;
   readonly pivot: {
@@ -34,6 +34,6 @@ export interface PpaeNatureGeneratorLike<Profile> {
     speciesId: string,
     stage: string,
     profile: Profile,
-    seed: number | string
+    seed: number
   ): PpaeTreeArtifactLike;
 }
