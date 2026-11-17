@@ -61,7 +61,7 @@ function App() {
             </div>
           </div>
 
-          <div className="canvas-wrap">
+          <div className="editor-canvas-slot">
             {activeWorkspace === "World" ? (
               <WorldCanvas />
             ) : (
