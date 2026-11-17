@@ -6,3 +6,5 @@ export { createProject, isPixelForgeProject, PROJECT_FORMAT_VERSION } from "./pr
 export type { CreateProjectOptions, PixelForgeProject, ProjectSettings } from "./project";
 export { DEFAULT_CAMERA, MAX_CAMERA_ZOOM, MIN_CAMERA_ZOOM, panCamera, zoomCameraAt } from "./camera";
 export type { Camera2D } from "./camera";
+export { ASSET_MANIFEST_VERSION, createAssetManifest, isAssetManifest } from "./assets";
+export type { AssetCategory, AssetManifest, AssetManifestEntry, AssetSource } from "./assets";
