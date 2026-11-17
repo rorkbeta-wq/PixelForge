@@ -86,6 +86,25 @@ export async function saveStoredAsset(
   return stored;
 }
 
+export async function saveGeneratedAsset(
+  blob: Blob,
+  manifest: AssetManifestEntry
+): Promise<StoredAsset> {
+  if (blob.type !== "image/png") {
+    throw new Error("Generated assets must be PNG images.");
+  }
+  const stored: StoredAsset = {
+    manifest,
+    blob: blob.slice(0, blob.size, "image/png")
+  };
+  await runTransaction("readwrite", (store, resolve, reject) => {
+    const request = store.put(stored);
+    request.onsuccess = () => resolve(stored);
+    request.onerror = () => reject(new Error("Unable to save the generated asset."));
+  });
+  return stored;
+}
+
 export async function deleteStoredAsset(id: string): Promise<void> {
   await runTransaction("readwrite", (store, resolve, reject) => {
     const request = store.delete(id);
