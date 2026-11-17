@@ -19,6 +19,9 @@ export function createTileMap(width = 20, height = 20, chunkSize = 32): TileMap 
   if (!Number.isInteger(height) || height < 1 || height > 4096) {
     throw new RangeError("Map height must be an integer between 1 and 4096.");
   }
+  if (width * height > 1_048_576) {
+    throw new RangeError("Map area cannot exceed 1,048,576 tiles.");
+  }
   if (!Number.isInteger(chunkSize) || chunkSize < 1) {
     throw new RangeError("Chunk size must be a positive integer.");
   }
