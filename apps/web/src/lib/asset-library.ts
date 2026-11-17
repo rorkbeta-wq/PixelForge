@@ -61,7 +61,7 @@ export async function saveStoredAsset(
   const bitmap = await createImageBitmap(file);
   const manifest: AssetManifestEntry = {
     id: crypto.randomUUID(),
-    name: file.name.replace(/\\.png$/i, "") || "Untitled asset",
+    name: file.name.replace(/\.png$/i, "") || "Untitled asset",
     category,
     mimeType: "image/png",
     width: bitmap.width,
