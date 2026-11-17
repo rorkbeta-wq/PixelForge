@@ -8,7 +8,7 @@ export interface PpaeTreeRequest<Profile> {
   readonly stage: string;
   readonly profileId: string;
   readonly profile: Profile;
-  readonly seed: number | string;
+  readonly seed: number;
 }
 
 export interface PpaeTreeAdapterOptions {
