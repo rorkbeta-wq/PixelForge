@@ -1,69 +1,48 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  DEFAULT_CAMERA,
-  DEFAULT_PROJECTION,
-  panCamera,
-  zoomCameraAt,
-  type Camera2D
-} from "@pixelforge/core";
-import { drawIsometricGrid } from "@pixelforge/renderer";
+import { createTileMap, DEFAULT_CAMERA, DEFAULT_PROJECTION, hitTestTile, panCamera, zoomCameraAt, type Camera2D, type TileCoordinate } from "@pixelforge/core";
+import { drawTileMap } from "@pixelforge/renderer";
 
 interface WorldCanvasProps {
   projectionMode?: "ISOMETRIC" | "TOP_DOWN";
+  onTileSelect?: (tile: TileCoordinate | null) => void;
 }
 
-function WorldCanvas({ projectionMode = "ISOMETRIC" }: WorldCanvasProps) {
+function WorldCanvas({ projectionMode = "ISOMETRIC", onTileSelect }: WorldCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [camera, setCamera] = useState<Camera2D>({ ...DEFAULT_CAMERA });
   const [isPanning, setIsPanning] = useState(false);
-  const pointerRef = useRef<{ x: number; y: number } | null>(null);
+  const [selectedTile, setSelectedTile] = useState<TileCoordinate | null>(null);
+  const [map] = useState(() => createTileMap(20, 20, 32));
+  const pointerRef = useRef<{ x: number; y: number; startX: number; startY: number; moved: boolean } | null>(null);
   const cameraRef = useRef(camera);
   cameraRef.current = camera;
+  const projection = { ...DEFAULT_PROJECTION, mode: projectionMode };
 
   const render = useCallback(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
-
     const bounds = container.getBoundingClientRect();
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
     const width = Math.max(1, Math.floor(bounds.width));
     const height = Math.max(1, Math.floor(bounds.height));
-
-    if (canvas.width !== Math.floor(width * pixelRatio) || canvas.height !== Math.floor(height * pixelRatio)) {
-      canvas.width = Math.floor(width * pixelRatio);
-      canvas.height = Math.floor(height * pixelRatio);
+    if (canvas.width !== Math.floor(width * ratio) || canvas.height !== Math.floor(height * ratio)) {
+      canvas.width = Math.floor(width * ratio);
+      canvas.height = Math.floor(height * ratio);
     }
-
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
-
     const context = canvas.getContext("2d");
     if (!context) return;
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    drawTileMap(context, { width, height, cameraX: cameraRef.current.x, cameraY: cameraRef.current.y, zoom: cameraRef.current.zoom, projection, map, selectedTile });
+  }, [map, projection, selectedTile]);
 
-    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    drawIsometricGrid(context, {
-      width,
-      height,
-      cameraX: cameraRef.current.x,
-      cameraY: cameraRef.current.y,
-      zoom: cameraRef.current.zoom,
-      projection: {
-        ...DEFAULT_PROJECTION,
-        mode: projectionMode
-      }
-    });
-  }, [projectionMode]);
-
-  useEffect(() => {
-    render();
-  }, [camera, render]);
-
+  useEffect(() => { render(); }, [camera, render]);
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
     const observer = new ResizeObserver(render);
     observer.observe(container);
     return () => observer.disconnect();
@@ -72,23 +51,33 @@ function WorldCanvas({ projectionMode = "ISOMETRIC" }: WorldCanvasProps) {
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (event.button !== 0 && event.button !== 1) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    pointerRef.current = { x: event.clientX, y: event.clientY };
-    setIsPanning(true);
+    pointerRef.current = { x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, moved: false };
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    const previous = pointerRef.current;
-    if (!previous) return;
-
-    setCamera((current) => panCamera(
-      current,
-      event.clientX - previous.x,
-      event.clientY - previous.y
-    ));
-    pointerRef.current = { x: event.clientX, y: event.clientY };
+    const pointer = pointerRef.current;
+    if (!pointer) return;
+    const dx = event.clientX - pointer.x;
+    const dy = event.clientY - pointer.y;
+    if (!pointer.moved && Math.hypot(event.clientX - pointer.startX, event.clientY - pointer.startY) > 3) {
+      pointer.moved = true;
+      setIsPanning(true);
+    }
+    if (pointer.moved) setCamera(current => panCamera(current, dx, dy));
+    pointer.x = event.clientX;
+    pointer.y = event.clientY;
   };
 
-  const stopPanning = () => {
+  const stopPointer = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const pointer = pointerRef.current;
+    if (pointer && !pointer.moved && event.type === "pointerup" && event.button === 0) {
+      const bounds = event.currentTarget.getBoundingClientRect();
+      const sx = (event.clientX - bounds.left - bounds.width / 2 - cameraRef.current.x) / cameraRef.current.zoom;
+      const sy = (event.clientY - bounds.top - bounds.height / 2 - cameraRef.current.y) / cameraRef.current.zoom;
+      const tile = hitTestTile(map, { x: sx, y: sy }, projection);
+      setSelectedTile(tile);
+      onTileSelect?.(tile);
+    }
     pointerRef.current = null;
     setIsPanning(false);
   };
@@ -96,49 +85,28 @@ function WorldCanvas({ projectionMode = "ISOMETRIC" }: WorldCanvasProps) {
   const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
     event.preventDefault();
     const bounds = event.currentTarget.getBoundingClientRect();
-    const anchorX = event.clientX - bounds.left - bounds.width / 2;
-    const anchorY = event.clientY - bounds.top - bounds.height / 2;
-    const factor = Math.exp(-event.deltaY * 0.0012);
-
-    setCamera((current) => zoomCameraAt(
-      current,
-      current.zoom * factor,
-      anchorX,
-      anchorY
-    ));
+    const x = event.clientX - bounds.left - bounds.width / 2;
+    const y = event.clientY - bounds.top - bounds.height / 2;
+    setCamera(current => zoomCameraAt(current, current.zoom * Math.exp(-event.deltaY * 0.0012), x, y));
   };
-
-  const resetCamera = () => setCamera({ ...DEFAULT_CAMERA });
 
   return (
     <div className="canvas-wrap" ref={containerRef}>
-      <canvas
-        ref={canvasRef}
-        className={isPanning ? "world-canvas panning" : "world-canvas"}
-        aria-label="Interactive isometric world grid. Drag to pan and scroll to zoom."
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={stopPanning}
-        onPointerCancel={stopPanning}
-        onLostPointerCapture={stopPanning}
-        onWheel={handleWheel}
-      />
+      <canvas ref={canvasRef} className={isPanning ? "world-canvas panning" : "world-canvas"}
+        aria-label="Finite tile map. Tap a tile to select it, drag to pan, scroll to zoom."
+        onPointerDown={handlePointerDown} onPointerMove={handlePointerMove}
+        onPointerUp={stopPointer} onPointerCancel={stopPointer}
+        onLostPointerCapture={() => { pointerRef.current = null; setIsPanning(false); }}
+        onWheel={handleWheel} />
       <div className="canvas-tools">
-        <button className="canvas-tool" type="button" onClick={() => setCamera((current) => zoomCameraAt(current, current.zoom / 1.2, 0, 0))} aria-label="Zoom out">−</button>
+        <button className="canvas-tool" type="button" onClick={() => setCamera(c => zoomCameraAt(c, c.zoom / 1.2, 0, 0))} aria-label="Zoom out">−</button>
         <span>{Math.round(camera.zoom * 100)}%</span>
-        <button className="canvas-tool" type="button" onClick={() => setCamera((current) => zoomCameraAt(current, current.zoom * 1.2, 0, 0))} aria-label="Zoom in">+</button>
-        <button className="canvas-tool reset-camera" type="button" onClick={resetCamera}>Reset</button>
+        <button className="canvas-tool" type="button" onClick={() => setCamera(c => zoomCameraAt(c, c.zoom * 1.2, 0, 0))} aria-label="Zoom in">+</button>
+        <button className="canvas-tool reset-camera" type="button" onClick={() => setCamera({ ...DEFAULT_CAMERA })}>Reset</button>
       </div>
-      <div className="canvas-hint-overlay">
-        <strong>World grid</strong>
-        <span>Drag to move · Scroll to zoom</span>
-      </div>
-      <div className="canvas-footer">
-        <span>0 × 0 tiles</span>
-        <span>{projectionMode.replace("_", " ")} PROJECTION</span>
-      </div>
+      <div className="canvas-hint-overlay"><strong>Map · {map.width} × {map.height}</strong><span>Tap a tile to select · Drag to move · Scroll to zoom</span></div>
+      <div className="canvas-footer"><span>{selectedTile ? `Tile ${selectedTile.x}, ${selectedTile.y}` : "No tile selected"}</span><span>{projectionMode.replace("_", " ")} PROJECTION</span></div>
     </div>
   );
 }
-
 export default WorldCanvas;
