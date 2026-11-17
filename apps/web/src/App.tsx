@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import WorldCanvas from "./components/WorldCanvas";
 
 type Workspace = "World" | "Assets" | "Characters" | "Animation";
 
@@ -6,7 +7,6 @@ const workspaces: Workspace[] = ["World", "Assets", "Characters", "Animation"];
 
 function App() {
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace>("World");
-  const grid = useMemo(() => Array.from({ length: 11 * 11 }, (_, index) => index), []);
 
   return (
     <main className="studio-shell">
@@ -63,14 +63,7 @@ function App() {
 
           <div className="canvas-wrap">
             {activeWorkspace === "World" ? (
-              <div className="map-grid" aria-label="Empty isometric map preview">
-                {grid.map((cell) => <div className="grid-cell" key={cell} />)}
-                <div className="canvas-hint">
-                  <span className="hint-cross">＋</span>
-                  <strong>Your world starts here</strong>
-                  <span>Map editing tools are coming in the next milestone.</span>
-                </div>
-              </div>
+              <WorldCanvas />
             ) : (
               <div className="coming-soon">
                 <span className="coming-soon-mark">✳</span>
@@ -78,10 +71,6 @@ function App() {
                 <span>This workspace is planned for a future release.</span>
               </div>
             )}
-            <div className="canvas-footer">
-              <span>0 × 0 tiles</span>
-              <span>ISOMETRIC PROJECTION</span>
-            </div>
           </div>
         </section>
 
