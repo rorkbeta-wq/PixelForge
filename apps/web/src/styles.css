@@ -242,3 +242,18 @@ h1 { margin: 0; font-size: 19px; letter-spacing: -.5px; font-weight: 650; }
 .asset-error { margin: 5px 0 12px; padding: 9px 11px; border: 1px solid #784545; border-radius: 5px; background: #321f22; color: #ffc0c0; font-size: 10px; }
 .asset-storage-note { margin-top: auto; padding-top: 18px; color: #6f7887; font-size: 9px; }
 @media (max-width: 650px) { .asset-toolbar { align-items: flex-start; flex-direction: column; } .asset-import-controls { width: 100%; } .asset-category-label { display: none; } .asset-grid { grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)); } }
+
+.tree-generator { margin-top: 18px; border: 1px solid #303642; border-radius: 7px; background: #1a1e26; overflow: hidden; }
+.tree-generator-controls { display: grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap: 12px; padding: 14px; border-bottom: 1px solid #303642; }
+.tree-generator-controls label { display: grid; gap: 6px; color: #8f98a8; font-size: 8px; letter-spacing: .7px; }
+.tree-generator-controls select, .tree-generator-controls input { width: 100%; min-width: 0; height: 32px; border: 1px solid #343c49; border-radius: 4px; padding: 0 8px; background: #202630; color: #d4dae4; font-size: 10px; }
+.tree-generator-controls .button { align-self: end; min-height: 32px; }
+.tree-generator-preview { min-height: 210px; display: flex; align-items: center; justify-content: center; gap: 22px; padding: 18px; background: #151920; }
+.tree-preview-image { display: grid; place-items: center; min-width: 150px; min-height: 160px; max-width: 100%; padding: 12px; border: 1px solid #303642; border-radius: 5px; background-color: #171c24; background-image: linear-gradient(45deg, #242b35 25%, transparent 25%), linear-gradient(-45deg, #242b35 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #242b35 75%), linear-gradient(-45deg, transparent 75%, #242b35 75%); background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0; }
+.tree-preview-image canvas { display: block; max-width: min(100%, 280px); max-height: 280px; width: auto; height: auto; image-rendering: pixelated; }
+.tree-preview-details { display: grid; gap: 7px; color: #8d96a5; font-size: 9px; }
+.tree-preview-details strong { color: #dbe0e8; font-size: 12px; text-transform: capitalize; }
+.tree-preview-details .button { margin-top: 7px; justify-self: start; }
+.tree-preview-placeholder { color: #7e8796; font-size: 10px; text-align: center; }
+@media (max-width: 760px) { .tree-generator-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tree-generator-preview { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 420px) { .tree-generator-controls { grid-template-columns: 1fr; } }
