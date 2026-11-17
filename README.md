@@ -13,10 +13,11 @@ Implemented:
 - Initial studio interface with World, Assets, Characters, and Animation workspaces
 - Isometric and top-down coordinate projection primitives
 - Versioned project data model
-- Unit tests for coordinate transforms and project validation
+- Canvas 2D isometric and top-down grid renderer
+- Interactive camera with pointer panning and cursor-centered zoom
+- Unit tests for coordinate transforms, camera behavior, and project validation
 
 Planned next:
-- Canvas 2D renderer and camera
 - IndexedDB project persistence
 - Map and chunk data structures
 - Basic map editing interactions
