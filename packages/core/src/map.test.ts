@@ -17,6 +17,10 @@ describe("tile map", () => {
     expect(() => createTileMap(10, 1.5)).toThrow(RangeError);
   });
 
+  it("rejects maps that exceed the maximum tile count", () => {
+    expect(() => createTileMap(4096, 4096)).toThrow(RangeError);
+  });
+
   it("updates tiles immutably", () => {
     const map = createTileMap(4, 4);
     const updated = setTile(map, { x: 2, y: 1 }, "grass");
