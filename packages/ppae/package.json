@@ -1,0 +1,9 @@
+{
+  "name": "@pixelforge/ppae",
+  "version": "0.2.0-alpha.1-pf.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tree": "./src/tree-generator.ts"
+  }
+}
