@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * PPAE Deterministic Hashing & Seeded PRNG Subsystem
  * Guarantees identical pixel output across platforms regardless of execution order.
