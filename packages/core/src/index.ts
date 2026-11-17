@@ -22,3 +22,13 @@ export type {
   PixelForgeProject,
   ProjectSettings
 } from "./project";
+
+export {
+  DEFAULT_CAMERA,
+  MAX_CAMERA_ZOOM,
+  MIN_CAMERA_ZOOM,
+  panCamera,
+  zoomCameraAt
+} from "./camera";
+
+export type { Camera2D } from "./camera";
