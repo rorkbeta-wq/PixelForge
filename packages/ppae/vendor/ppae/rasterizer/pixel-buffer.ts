@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ArtModuleSize, RGBAColor } from '../core/contracts';
 
 /**
