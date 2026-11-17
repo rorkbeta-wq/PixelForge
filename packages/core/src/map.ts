@@ -64,5 +64,6 @@ export function hitTestTile(
   projection: ProjectionConfig = DEFAULT_PROJECTION
 ): TileCoordinate | null {
   const coordinate = screenToTile(point, projection);
-  return isTileCoordinateInBounds(map, coordinate) ? coordinate : null;
+  if (coordinate === null || !isTileCoordinateInBounds(map, coordinate)) return null;
+  return coordinate;
 }
