@@ -24,6 +24,18 @@ describe("PPAE tree generator adapter", () => {
     expect(first.pixels).not.toEqual(second.pixels);
   });
 
+  it.each(["oak", "pine", "birch"] as const)(
+    "generates a non-empty species-specific %s sprite",
+    (species) => {
+      const result = generator.generate({
+        species, stage: "mature", profile: "detailed-32x32", seed: 24680
+      });
+      expect(result.width).toBeGreaterThan(0);
+      expect(result.height).toBeGreaterThan(0);
+      expect(result.pixels.some((channel) => channel > 0)).toBe(true);
+    }
+  );
+
   it("rejects seeds outside the unsigned 32-bit range", () => {
     expect(() => generator.generate({
       species: "oak", stage: "mature", profile: "detailed-32x32", seed: -1
