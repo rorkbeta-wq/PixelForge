@@ -8,7 +8,7 @@ import { PixelBuffer } from "../vendor/ppae/rasterizer/pixel-buffer";
 import { BOTANICAL_SPECIES_DEFINITIONS, TreeMorphologyResolver } from "../vendor/ppae/vegetation/tree-morphology";
 import { TreeSkeletonRasterizer } from "../vendor/ppae/vegetation/tree-skeleton-rasterizer";
 import { TreeCanopyFoliageRasterizer, type CanopyEnvironmentalState } from "../vendor/ppae/vegetation/tree-foliage-rasterizer";
-import { applySpeciesGrowthGrammar } from "./species-growth";
+import { applySpeciesGrowthGrammar, measureSpeciesSilhouette } from "./species-growth";
 
 export const PPAE_VERSION = "0.2.0-alpha.1";
 export const PPAE_UPSTREAM_COMMIT = "ed98da220d9ac30e35b23da555d60f5a0ec84a51";
@@ -84,7 +84,11 @@ export class PPAETreeGenerator {
       profile.moduleSize,
       morphology.seed
     );
-    const resolvedMorphology = { ...morphology, skeleton: speciesGrowth.skeleton };
+    const resolvedMorphology = {
+      ...morphology,
+      skeleton: speciesGrowth.skeleton,
+      metrics: measureSpeciesSilhouette(speciesGrowth.skeleton)
+    };
     const skeleton = this.skeleton.renderSkeleton(
       resolvedMorphology,
       profile,
