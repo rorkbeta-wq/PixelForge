@@ -4,6 +4,7 @@ import type {
   TreeFoliageMassNode,
   TreeLifecycleStage,
   TreeSkeletonNode,
+  TreeSilhouetteMetrics,
   TreeStructuralSkeleton
 } from "../vendor/ppae/core/contracts";
 
@@ -210,5 +211,36 @@ export function applySpeciesGrowthGrammar(
   return {
     skeleton: { ...source, nodes, segments, foliageMasses },
     strategy: familyId === "oak" ? "broadleaf-scaffold" : familyId === "pine" ? "conifer-whorls" : "slender-open-crown"
+  };
+}
+
+
+export function measureSpeciesSilhouette(skeleton: TreeStructuralSkeleton): TreeSilhouetteMetrics {
+  const points: Array<{ x: number; y: number }> = [];
+  for (const node of skeleton.nodes) points.push({ x: node.x, y: node.y });
+  for (const mass of skeleton.foliageMasses) {
+    points.push({ x: mass.centerX - mass.radiusX, y: mass.centerY - mass.radiusY });
+    points.push({ x: mass.centerX + mass.radiusX, y: mass.centerY + mass.radiusY });
+  }
+  const minX = Math.min(skeleton.pivotX, ...points.map((point) => point.x));
+  const maxX = Math.max(skeleton.pivotX, ...points.map((point) => point.x));
+  const minY = Math.min(skeleton.pivotY, ...points.map((point) => point.y));
+  const maxY = Math.max(skeleton.pivotY, ...points.map((point) => point.y));
+  const leftSpan = Math.max(1, skeleton.pivotX - minX);
+  const rightSpan = Math.max(1, maxX - skeleton.pivotX);
+  const totalWidth = Math.max(1, maxX - minX);
+  const totalHeight = Math.max(1, maxY - minY);
+  const base = skeleton.nodes.find((node) => node.nodeId === "trunk_base");
+  const averageDensity = skeleton.foliageMasses.length
+    ? skeleton.foliageMasses.reduce((sum, mass) => sum + mass.density, 0) / skeleton.foliageMasses.length
+    : 0;
+  return {
+    aspectRatio: totalWidth / totalHeight,
+    canopyWidthToHeightRatio: totalWidth / totalHeight,
+    trunkToTotalHeightRatio: base ? (base.radiusPx * 2) / totalHeight : 0,
+    horizontalAsymmetry: Math.abs(leftSpan - rightSpan) / Math.max(leftSpan, rightSpan),
+    branchSpreadSpanPx: totalWidth,
+    foliageMassCount: skeleton.foliageMasses.length,
+    canopyOpennessScore: Math.max(0, Math.min(1, 1 - averageDensity))
   };
 }
