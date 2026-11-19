@@ -95,7 +95,7 @@ export function applySpeciesGrowthGrammar(
   const growthScale = stage === "sapling" ? 0.58 : stage === "young" ? 0.76 :
     stage === "immature" ? 0.9 : stage === "ancient" ? 1.08 : 1;
   const topLimit = Math.max(2, Math.floor(height * 0.08));
-  const maxReach = Math.max(moduleSize * 1.4, width * 0.42 * growthScale);
+  const maxReach = Math.max(moduleSize * 1.4, width * 0.3 * growthScale);
   let branchIndex = 0;
 
   const addBranch = (
