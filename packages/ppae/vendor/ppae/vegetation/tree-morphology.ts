@@ -15,6 +15,7 @@ import type {
 } from '../core/contracts';
 import { PPAE_SCHEMA_VERSION } from '../core/contracts';
 import { fnv1aHash32, SeededRNG } from '../core/deterministic';
+import { applySpeciesGrowthGrammar } from '../../../src/species-growth';
 
 /** Canonical, independently named stages available to the shared runtime catalog. */
 export const TREE_LIFECYCLE_STAGES: readonly TreeLifecycleStage[] = [
@@ -297,9 +298,12 @@ export class TreeMorphologyResolver {
     const canvasHeightModules = Math.max(3, Math.round(rawHeight * stageRule.heightFactor));
     const canvasWidthTexels = canvasWidthModules * mod;
     const canvasHeightTexels = canvasHeightModules * mod;
-    const initialSkeleton = this.buildStructuralSkeleton(
+    const baseSkeleton = this.buildStructuralSkeleton(
       archetype, stage, stageRule, canvasWidthTexels, canvasHeightTexels, mod, rng
     );
+    const initialSkeleton = applySpeciesGrowthGrammar(
+      familyId, stage, baseSkeleton, canvasWidthTexels, canvasHeightTexels, mod, resolvedSeed
+    ).skeleton;
     // Keep species metrics based on the original morphology, not on transparent
     // safety padding, so width/asymmetry scoring and ecology remain comparable.
     const metrics = this.computeSilhouetteMetrics(
