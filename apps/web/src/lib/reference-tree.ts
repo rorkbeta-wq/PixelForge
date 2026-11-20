@@ -99,6 +99,55 @@ export function cropTransparentBounds(source: PixelImage, padding = 0): PixelIma
   return { width, height, data };
 }
 
+
+export function extractConnectedComponents(source: PixelImage, minimumPixels = 24): PixelImage[] {
+  const total = source.width * source.height;
+  const visited = new Uint8Array(total);
+  const queue = new Int32Array(total);
+  const components: Array<{ pixels: number[]; minX: number; minY: number; maxX: number; maxY: number }> = [];
+  for (let start = 0; start < total; start++) {
+    if (visited[start] || source.data[start * 4 + 3] < 16) continue;
+    let head = 0;
+    let tail = 0;
+    queue[tail++] = start;
+    visited[start] = 1;
+    const pixels: number[] = [];
+    let minX = source.width; let minY = source.height; let maxX = -1; let maxY = -1;
+    while (head < tail) {
+      const index = queue[head++];
+      pixels.push(index);
+      const x = index % source.width;
+      const y = Math.floor(index / source.width);
+      minX = Math.min(minX, x); minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (!dx && !dy) continue;
+        const nx = x + dx; const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= source.width || ny >= source.height) continue;
+        const neighbor = ny * source.width + nx;
+        if (!visited[neighbor] && source.data[neighbor * 4 + 3] >= 16) {
+          visited[neighbor] = 1;
+          queue[tail++] = neighbor;
+        }
+      }
+    }
+    if (pixels.length >= minimumPixels) components.push({ pixels, minX, minY, maxX, maxY });
+  }
+  components.sort((a, b) => a.minY - b.minY || a.minX - b.minX);
+  return components.map((component) => {
+    const width = component.maxX - component.minX + 1;
+    const height = component.maxY - component.minY + 1;
+    const data = new Uint8ClampedArray(width * height * 4);
+    for (const index of component.pixels) {
+      const x = index % source.width - component.minX;
+      const y = Math.floor(index / source.width) - component.minY;
+      const from = index * 4;
+      data.set(source.data.subarray(from, from + 4), (y * width + x) * 4);
+    }
+    return { width, height, data };
+  });
+}
+
 export function analyzeReference(source: PixelImage): ReferenceAnalysis {
   const rowOccupancy: number[] = [];
   const colors = new Map<string, number>();
