@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PixelImage } from "./reference-tree";
-import { analyzeReference, createReferenceVariation, cropTransparentBounds, removeCornerBackground } from "./reference-tree";
+import { analyzeReference, createReferenceVariation, cropTransparentBounds, extractConnectedComponents, removeCornerBackground } from "./reference-tree";
 
 function image(width: number, height: number, fill: readonly [number, number, number, number]): PixelImage {
   const data = new Uint8ClampedArray(width * height * 4);
@@ -26,7 +26,7 @@ describe("reference tree image processing", () => {
     expect(result.data[3]).toBe(255);
   });
 
-  it("extracts bounds, anchor, and a compact palette", () => {
+  it("separates disconnected sprites from a transparent sheet", () => {\n    const source = image(12, 8, [0, 0, 0, 0]);\n    for (let y = 1; y < 4; y++) for (let x = 1; x < 4; x++) source.data.set([90, 60, 20, 255], (y * 12 + x) * 4);\n    for (let y = 4; y < 7; y++) for (let x = 8; x < 11; x++) source.data.set([90, 60, 20, 255], (y * 12 + x) * 4);\n    const result = extractConnectedComponents(source, 4);\n    expect(result).toHaveLength(2);\n    expect(result.map((item) => [item.width, item.height])).toEqual([[3, 3], [3, 3]]);\n  });\n\n  it("extracts bounds, anchor, and a compact palette", () => {
     const source = image(4, 4, [0, 0, 0, 0]);
     source.data.set([80, 120, 30, 255], (1 * 4 + 1) * 4);
     source.data.set([90, 130, 35, 255], (2 * 4 + 2) * 4);
