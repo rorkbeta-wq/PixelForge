@@ -227,4 +227,164 @@ export function createReferenceVariation(source: PixelImage, options: VariationO
   return { width: source.width, height: source.height, data: output };
 }
 
-export const REFERENCE_TREE_ALGORITHM_VERSION = ALGORITHM_VERSION;
+
+export interface TreeGenerationOptions {
+  readonly seed: number;
+  readonly season: "summer" | "autumn" | "winter" | "sparse";
+  readonly age: "young" | "mature" | "old";
+}
+
+export interface GeneratedTree {
+  readonly image: PixelImage;
+  readonly analysis: ReferenceAnalysis;
+  readonly seed: number;
+}
+
+function seededRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hexRgb(hex: string): [number, number, number] {
+  const value = Number.parseInt(hex.slice(1), 16);
+  return [(value >>> 16) & 255, (value >>> 8) & 255, value & 255];
+}
+
+function setPixel(image: PixelImage, x: number, y: number, color: readonly number[]): void {
+  const px = Math.round(x); const py = Math.round(y);
+  if (px < 0 || py < 0 || px >= image.width || py >= image.height) return;
+  const offset = (py * image.width + px) * 4;
+  image.data[offset] = color[0]; image.data[offset + 1] = color[1];
+  image.data[offset + 2] = color[2]; image.data[offset + 3] = 255;
+}
+
+function drawPixelLine(image: PixelImage, x0: number, y0: number, x1: number, y1: number,
+  thickness: number, color: readonly number[]): void {
+  const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+  for (let step = 0; step <= steps; step++) {
+    const t = step / steps;
+    const x = x0 + (x1 - x0) * t;
+    const y = y0 + (y1 - y0) * t;
+    const radius = Math.max(0, Math.floor(thickness / 2));
+    for (let oy = -radius; oy <= radius; oy++) for (let ox = -radius; ox <= radius; ox++) {
+      if (ox * ox + oy * oy <= radius * radius + 1) setPixel(image, x + ox, y + oy, color);
+    }
+  }
+}
+
+function paintFoliageCluster(image: PixelImage, cx: number, cy: number, rx: number, ry: number,
+  palette: readonly (readonly number[])[], random: () => number): void {
+  const left = Math.floor(cx - rx); const right = Math.ceil(cx + rx);
+  const top = Math.floor(cy - ry); const bottom = Math.ceil(cy + ry);
+  for (let y = top; y <= bottom; y++) for (let x = left; x <= right; x++) {
+    const nx = (x - cx) / Math.max(1, rx);
+    const ny = (y - cy) / Math.max(1, ry);
+    const irregular = 0.78 + random() * 0.32;
+    if (nx * nx + ny * ny > irregular) continue;
+    const edge = nx * nx + ny * ny;
+    const colorIndex = edge > 0.68 ? 0 : random() < 0.17 ? palette.length - 1 : Math.min(palette.length - 1, 1 + Math.floor(random() * Math.max(1, palette.length - 1)));
+    setPixel(image, x, y, palette[colorIndex]);
+  }
+}
+
+function deriveFoliagePalette(colors: readonly string[], season: TreeGenerationOptions["season"]): number[][] {
+  const rgb = colors.map(hexRgb);
+  const foliage = rgb.filter(([r, g, b]) => g >= r * 0.82 && g >= b * 0.82 && g - r > 4);
+  const source = foliage.length >= 3 ? foliage : [[44, 76, 38], [65, 104, 48], [91, 128, 56], [129, 151, 72]];
+  const sorted = source.sort((a, b) => (a[0] + a[1] + a[2]) - (b[0] + b[1] + b[2]));
+  if (season === "autumn") return sorted.map(([r, g, b], index) => index % 2
+    ? [clamp(r * 1.55 + 28, 0, 255), clamp(g * 0.72, 0, 255), clamp(b * 0.28, 0, 255)]
+    : [clamp(r * 1.35 + 35, 0, 255), clamp(g * 0.9 + 12, 0, 255), clamp(b * 0.45, 0, 255)]);
+  if (season === "winter") return [[54, 68, 66], [82, 99, 94], [123, 137, 130], [165, 176, 168]];
+  return sorted;
+}
+
+export function generateTreeFromReference(reference: PixelImage, options: TreeGenerationOptions): GeneratedTree {
+  if (!Number.isSafeInteger(options.seed) || options.seed < 0 || options.seed > 0xffffffff) {
+    throw new RangeError("Seed must be an unsigned 32-bit integer.");
+  }
+  const analysis = analyzeReference(reference);
+  const random = seededRandom(options.seed);
+  const width = clamp(Math.round(reference.width * (options.age === "young" ? 0.82 : options.age === "old" ? 1.16 : 1)), 48, 512);
+  const height = clamp(Math.round(reference.height * (options.age === "young" ? 0.78 : options.age === "old" ? 1.12 : 1)), 64, 640);
+  const image: PixelImage = { width, height, data: new Uint8ClampedArray(width * height * 4) };
+  const foliagePalette = deriveFoliagePalette(analysis.dominantColors, options.season);
+  const barkSource = analysis.dominantColors.map(hexRgb).filter(([r, g, b]) => r > g * 1.08 && r > b * 1.08);
+  const bark = barkSource.length ? barkSource.sort((a, b) => a[0] - b[0]) : [[45, 31, 25], [79, 49, 34], [112, 76, 49]];
+  const trunkDark = bark[0]; const trunkMid = bark[Math.floor(bark.length / 2)]; const trunkLight = bark[bark.length - 1];
+  const baseX = width * (0.48 + (random() - 0.5) * 0.06);
+  const baseY = height - 2;
+  const crownTop = height * (options.age === "young" ? 0.2 : 0.08);
+  const crownBottom = height * (options.age === "young" ? 0.64 : 0.7);
+  const crownCenterY = (crownTop + crownBottom) / 2;
+  const crownRx = width * (options.age === "young" ? 0.27 : options.age === "old" ? 0.43 : 0.36);
+  const crownRy = height * (options.age === "young" ? 0.24 : 0.3);
+  const lean = (random() - 0.5) * width * 0.12 + (options.age === "old" ? (random() - 0.5) * width * 0.12 : 0);
+  const trunkTopX = baseX + lean;
+  const trunkWidth = Math.max(3, Math.round(width * (options.age === "young" ? 0.035 : options.age === "old" ? 0.075 : 0.052)));
+  const trunkMidY = height * 0.57;
+  drawPixelLine(image, baseX, baseY, trunkTopX, crownTop + crownRy * 0.42, trunkWidth, trunkDark);
+  drawPixelLine(image, baseX - 1, baseY, trunkTopX - 1, crownTop + crownRy * 0.42, Math.max(1, trunkWidth - 2), trunkMid);
+  drawPixelLine(image, baseX - trunkWidth * 0.25, baseY - 3, trunkTopX - trunkWidth * 0.2, crownTop + crownRy * 0.5, 1, trunkLight);
+  if (options.age === "old") {
+    drawPixelLine(image, baseX, baseY - height * 0.18, baseX + width * 0.12, height * 0.66, Math.max(2, trunkWidth * 0.55), trunkDark);
+  }
+  const branchTips: Array<{ x: number; y: number; reach: number }> = [];
+  const branchCount = options.age === "young" ? 5 : options.age === "old" ? 11 : 8;
+  for (let index = 0; index < branchCount; index++) {
+    const side = index % 2 === 0 ? -1 : 1;
+    const t = 0.24 + (index / Math.max(1, branchCount - 1)) * 0.57;
+    const startY = baseY - height * t;
+    const vertical = (startY - crownTop) / Math.max(1, crownBottom - crownTop);
+    const reach = crownRx * (0.42 + random() * 0.48) * (options.age === "young" ? 0.72 : 1);
+    const endX = baseX + lean * (1 - t) + side * reach;
+    const endY = startY - height * (0.08 + random() * 0.12);
+    const thickness = Math.max(1, Math.round(trunkWidth * (0.48 - vertical * 0.2)));
+    drawPixelLine(image, baseX + lean * (1 - t), startY, endX, endY, thickness, trunkDark);
+    drawPixelLine(image, baseX + lean * (1 - t) - 1, startY, endX - 1, endY, 1, trunkMid);
+    branchTips.push({ x: endX, y: endY, reach });
+    for (let twig = 0; twig < 2; twig++) {
+      const twigSide = twig === 0 ? -1 : 1;
+      const twigX = endX + twigSide * reach * (0.18 + random() * 0.2);
+      const twigY = endY - height * (0.035 + random() * 0.055);
+      drawPixelLine(image, endX, endY, twigX, twigY, 1, trunkMid);
+      branchTips.push({ x: twigX, y: twigY, reach: reach * 0.45 });
+    }
+  }
+  const clusterCount = options.age === "young" ? 13 : options.age === "old" ? 23 : 19;
+  if (options.season !== "sparse" && options.season !== "winter") {
+    for (let index = 0; index < clusterCount; index++) {
+      const angle = random() * Math.PI * 2;
+      const radius = Math.sqrt(random());
+      const x = baseX + lean * 0.35 + Math.cos(angle) * crownRx * radius;
+      const y = crownCenterY + Math.sin(angle) * crownRy * radius;
+      const scale = 0.68 + random() * 0.58;
+      paintFoliageCluster(image, x, y, crownRx * (0.13 + random() * 0.09) * scale,
+        crownRy * (0.12 + random() * 0.08) * scale, foliagePalette, random);
+    }
+  } else {
+    for (const tip of branchTips) {
+      if (random() < 0.68) paintFoliageCluster(image, tip.x, tip.y, 2 + random() * 4, 2 + random() * 4,
+        options.season === "winter" ? [[190, 198, 190], [220, 224, 216]] : [[73, 83, 59], [103, 105, 66]], random);
+    }
+  }
+  if (options.season === "winter") {
+    const snow = [207, 216, 215];
+    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+      const offset = (y * width + x) * 4;
+      if (image.data[offset + 3] && random() < 0.11 && y < height * 0.72) {
+        image.data[offset] = snow[0]; image.data[offset + 1] = snow[1]; image.data[offset + 2] = snow[2];
+      }
+    }
+  }
+  const cropped = cropTransparentBounds(image, 3);
+  return { image: cropped, analysis, seed: options.seed };
+}
+
+export const REFERENCE_TREE_ALGORITHM_VERSION = "0.2.0";
