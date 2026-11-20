@@ -163,6 +163,7 @@ export function analyzeReference(source: PixelImage): ReferenceAnalysis {
       minX = Math.min(minX, x); minY = Math.min(minY, y);
       maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
       weightedX += x;
+      if (y >= source.height * 0.72) { baseWeightedX += x; basePixelCount++; }
       const key = [0, 1, 2].map((channel) => Math.round(source.data[offset + channel] / 16) * 16).join(",");
       colors.set(key, (colors.get(key) ?? 0) + 1);
     }
@@ -172,11 +173,12 @@ export function analyzeReference(source: PixelImage): ReferenceAnalysis {
   const dominantColors = [...colors.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([key]) =>
     "#" + key.split(",").map((part) => clamp(Number(part), 0, 255).toString(16).padStart(2, "0")).join("")
   );
+  const trunkAxisX = basePixelCount ? baseWeightedX / basePixelCount : weightedX / opaquePixelCount;
   return {
     width: source.width, height: source.height,
     alphaBounds: { x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 },
-    baseAnchor: { x: Math.round(weightedX / opaquePixelCount), y: maxY },
-    trunkAxisX: weightedX / opaquePixelCount, rowOccupancy, dominantColors, opaquePixelCount
+    baseAnchor: { x: Math.round(trunkAxisX), y: maxY },
+    trunkAxisX, rowOccupancy, dominantColors, opaquePixelCount
   };
 }
 
@@ -200,11 +202,15 @@ export function createReferenceVariation(source: PixelImage, options: VariationO
     throw new RangeError("Width and lean variation are outside the supported range.");
   }
   const centerX = analyzeReference(source).trunkAxisX;
+  let state = (options.seed >>> 0) || 0x9e3779b9;
+  state = Math.imul(state ^ (state >>> 16), 0x45d9f3b) >>> 0;
+  const seedWidthOffset = ((state & 0xffff) / 65535 - 0.5) * 0.012;
+  const seedLeanOffset = ((state >>> 16) / 65535 - 0.5) * 0.004;
   const output = new Uint8ClampedArray(source.width * source.height * 4);
   for (let y = 0; y < source.height; y++) {
     const vertical = y / Math.max(1, source.height - 1);
-    const scale = 1 + (options.widthScale - 1) * (0.35 + vertical * 0.65);
-    const shift = options.lean * source.width * (1 - vertical);
+    const scale = 1 + (options.widthScale - 1 + seedWidthOffset) * (0.35 + vertical * 0.65);
+    const shift = (options.lean + seedLeanOffset) * source.width * (1 - vertical);
     for (let x = 0; x < source.width; x++) {
       const sourceX = Math.round(centerX + (x - centerX - shift) / scale);
       if (sourceX < 0 || sourceX >= source.width) continue;
