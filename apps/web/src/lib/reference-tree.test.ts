@@ -26,7 +26,16 @@ describe("reference tree image processing", () => {
     expect(result.data[3]).toBe(255);
   });
 
-  it("separates disconnected sprites from a transparent sheet", () => {\n    const source = image(12, 8, [0, 0, 0, 0]);\n    for (let y = 1; y < 4; y++) for (let x = 1; x < 4; x++) source.data.set([90, 60, 20, 255], (y * 12 + x) * 4);\n    for (let y = 4; y < 7; y++) for (let x = 8; x < 11; x++) source.data.set([90, 60, 20, 255], (y * 12 + x) * 4);\n    const result = extractConnectedComponents(source, 4);\n    expect(result).toHaveLength(2);\n    expect(result.map((item) => [item.width, item.height])).toEqual([[3, 3], [3, 3]]);\n  });\n\n  it("extracts bounds, anchor, and a compact palette", () => {
+  it("separates disconnected sprites from a transparent sheet", () => {
+    const source = image(12, 8, [0, 0, 0, 0]);
+    for (let y = 1; y < 4; y++) for (let x = 1; x < 4; x++) source.data.set([90, 60, 20, 255], (y * 12 + x) * 4);
+    for (let y = 4; y < 7; y++) for (let x = 8; x < 11; x++) source.data.set([90, 60, 20, 255], (y * 12 + x) * 4);
+    const result = extractConnectedComponents(source, 4);
+    expect(result).toHaveLength(2);
+    expect(result.map((item) => [item.width, item.height])).toEqual([[3, 3], [3, 3]]);
+  });
+
+  it("extracts bounds, anchor, and a compact palette", () => {
     const source = image(4, 4, [0, 0, 0, 0]);
     source.data.set([80, 120, 30, 255], (1 * 4 + 1) * 4);
     source.data.set([90, 130, 35, 255], (2 * 4 + 2) * 4);
