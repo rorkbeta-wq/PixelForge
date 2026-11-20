@@ -152,7 +152,7 @@ export function analyzeReference(source: PixelImage): ReferenceAnalysis {
   const rowOccupancy: number[] = [];
   const colors = new Map<string, number>();
   let minX = source.width; let minY = source.height; let maxX = -1; let maxY = -1;
-  let opaquePixelCount = 0; let weightedX = 0;
+  let opaquePixelCount = 0; let weightedX = 0;\n  let baseWeightedX = 0; let basePixelCount = 0;
   for (let y = 0; y < source.height; y++) {
     let rowCount = 0;
     for (let x = 0; x < source.width; x++) {
