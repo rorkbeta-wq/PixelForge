@@ -10,14 +10,14 @@ import {
   removeCornerBackground,
   type PixelImage,
   type ReferenceAnalysis,
-  type VariationOptions
+  type TreeGenerationOptions
 } from "../lib/reference-tree";
 
 interface ReferenceTreeStudioProps {
   onAssetSaved: (asset: StoredAsset) => void;
 }
 
-type Season = VariationOptions["season"];
+type Season = TreeGenerationOptions["season"];
 
 async function fileToPixels(file: File): Promise<PixelImage> {
   const bitmap = await createImageBitmap(file);
