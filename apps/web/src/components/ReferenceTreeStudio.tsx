@@ -3,7 +3,7 @@ import type { AssetManifestEntry } from "@pixelforge/core";
 import { saveGeneratedAsset, type StoredAsset } from "../lib/asset-library";
 import {
   analyzeReference,
-  createReferenceVariation,
+  generateTreeFromReference,
   cropTransparentBounds,
   extractConnectedComponents,
   REFERENCE_TREE_ALGORITHM_VERSION,
@@ -55,8 +55,7 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
   const [analysis, setAnalysis] = useState<ReferenceAnalysis | null>(null);
   const [variation, setVariation] = useState<PixelImage | null>(null);
   const [tolerance, setTolerance] = useState(32);
-  const [widthScale, setWidthScale] = useState(1);
-  const [lean, setLean] = useState(0);
+  const [age, setAge] = useState<"young" | "mature" | "old">("mature");
   const [season, setSeason] = useState<Season>("summer");
   const [seed, setSeed] = useState("12345");
   const [busy, setBusy] = useState(false);
@@ -136,8 +135,9 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
       return;
     }
     try {
-      setVariation(createReferenceVariation(cleaned, { seed: parsedSeed, widthScale, lean, season }));
-      setStatus("Variant created from the reference pixels. Branch topology is preserved, not reconstructed.");
+      const generated = generateTreeFromReference(cleaned, { seed: parsedSeed, age, season });
+      setVariation(generated.image);
+      setStatus("A new tree structure was generated from the reference proportions and palette.");
       setError(null);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Variant generation failed.");
@@ -152,7 +152,7 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
       const parsedSeed = Number(seed);
       const manifest: AssetManifestEntry = {
         id: crypto.randomUUID(),
-        name: kind === "reference" ? `${sourceName}-reference` : `${sourceName}-${season}-${parsedSeed}`,
+        name: kind === "reference" ? `${sourceName}-reference` : `${sourceName}-${age}-${season}-${parsedSeed}`,
         category: "sprite",
         mimeType: "image/png",
         width: image.width,
@@ -204,17 +204,19 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
           </label>
           <button className="button button-muted" type="button" disabled={!source || busy} onClick={reprocess}>Reprocess background</button>
           <div className="reference-divider" />
-          <label>WIDTH VARIATION <strong>{widthScale.toFixed(2)}×</strong>
-            <input type="range" min="0.8" max="1.2" step="0.01" value={widthScale} onChange={(event) => setWidthScale(Number(event.target.value))} />
-          </label>
-          <label>LEAN <strong>{lean.toFixed(2)}</strong>
-            <input type="range" min="-0.08" max="0.08" step="0.01" value={lean} onChange={(event) => setLean(Number(event.target.value))} />
+          <label>TREE AGE
+            <select value={age} onChange={(event) => setAge(event.target.value as typeof age)}>
+              <option value="young">Young</option>
+              <option value="mature">Mature</option>
+              <option value="old">Old</option>
+            </select>
           </label>
           <label>SEASON
             <select value={season} onChange={(event) => setSeason(event.target.value as Season)}>
               <option value="summer">Summer</option>
               <option value="autumn">Autumn</option>
               <option value="winter">Winter</option>
+              <option value="sparse">Almost leafless</option>
             </select>
           </label>
           <label>SEED
@@ -242,7 +244,7 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
       </div>
       {status && <div className="reference-status">{status}</div>}
       {error && <div className="asset-error" role="alert">{error}</div>}
-      <p className="reference-caveat">Current prototype derives conservative image-space variants. It does not yet invent new branch topology or separate trunk and canopy layers.</p>
+      <p className="reference-caveat">Generated trees use a new seeded branch layout and foliage clusters. The reference supplies proportions and palette; it is not copied pixel-for-pixel.</p>
     </section>
   );
 }
