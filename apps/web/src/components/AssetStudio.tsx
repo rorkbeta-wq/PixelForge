@@ -238,7 +238,7 @@ function AssetStudio() {
             <div className="tree-preview-placeholder">Choose tree parameters and generate your first sprite.</div>
           )}
         </div>
-      </section>
+      </section>}
 
       <div className="asset-library-toolbar">
         <span>{assets.length} {assets.length === 1 ? "asset" : "assets"}</span>
