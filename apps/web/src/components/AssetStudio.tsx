@@ -7,6 +7,7 @@ import {
   type PPAEStyleProfile
 } from "@pixelforge/ppae/tree";
 import type { AssetCategory, AssetManifestEntry } from "@pixelforge/core";
+import ReferenceTreeStudio from "./ReferenceTreeStudio";
 import {
   deleteStoredAsset,
   listStoredAssets,
@@ -36,6 +37,7 @@ const generator = new PPAETreeGenerator();
 
 function AssetStudio() {
   const [assets, setAssets] = useState<StoredAsset[]>([]);
+  const [treeMode, setTreeMode] = useState<"reference" | "procedural">("reference");
   const [category, setCategory] = useState<AssetCategory>("sprite");
   const [filter, setFilter] = useState("all");
   const [species, setSpecies] = useState<(typeof TREE_SPECIES)[number]>("oak");
@@ -182,7 +184,11 @@ function AssetStudio() {
         </div>
       </div>
 
-      <section className="tree-generator">
+      <div className="tree-mode-tabs" role="tablist" aria-label="Tree generator mode">
+        <button type="button" role="tab" aria-selected={treeMode === "reference"} className={treeMode === "reference" ? "active" : ""} onClick={() => setTreeMode("reference")}>Reference-based</button>
+        <button type="button" role="tab" aria-selected={treeMode === "procedural"} className={treeMode === "procedural" ? "active" : ""} onClick={() => setTreeMode("procedural")}>PPAE procedural</button>
+      </div>
+      {treeMode === "reference" ? <ReferenceTreeStudio onAssetSaved={(asset) => setAssets((current) => [asset, ...current])} /> : <section className="tree-generator">
         <div className="tree-generator-controls">
           <label>SPECIES
             <select value={species} onChange={(event) => setSpecies(event.target.value as typeof species)}>
