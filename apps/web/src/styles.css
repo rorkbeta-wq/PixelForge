@@ -291,3 +291,10 @@ h1 { margin: 0; font-size: 19px; letter-spacing: -.5px; font-weight: 650; }
 .reference-caveat { margin: 12px 0 0; color: #7e8796; font-size: 9px; line-height: 1.5; }
 @media (max-width: 760px) { .reference-workspace { grid-template-columns: 1fr; } .reference-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } .reference-divider { grid-column: 1 / -1; } .reference-preview { min-height: 220px; } }
 @media (max-width: 480px) { .reference-intro { flex-direction: column; } .reference-controls { grid-template-columns: 1fr; } .tree-mode-tabs button { flex: 1; } }
+
+.reference-component-picker { margin-bottom: 12px; padding: 10px; border: 1px solid #394432; border-radius: 5px; background: #1c2419; }
+.reference-component-picker > strong { display: block; margin-bottom: 9px; color: #d4e8c0; font-size: 9px; font-weight: 600; }
+.reference-component-picker > div { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 7px; }
+.reference-component-picker button { min-width: 0; display: grid; gap: 5px; justify-items: center; padding: 6px; border: 1px solid #394432; border-radius: 4px; background: #171d17; color: #aebd9f; font-size: 8px; cursor: pointer; }
+.reference-component-picker button:hover { border-color: #9bc66c; color: #e0f2cf; }
+.reference-component-picker canvas { width: 100%; height: 64px; object-fit: contain; image-rendering: pixelated; }
