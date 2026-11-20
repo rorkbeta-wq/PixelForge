@@ -233,22 +233,16 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
 }
 
 function ReferenceImagePreview({ image }: { image: PixelImage }) {
-  const [url, setUrl] = useState("");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    const canvas = document.createElement("canvas");
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return;
     canvas.width = image.width;
     canvas.height = image.height;
-    const context = canvas.getContext("2d");
-    if (!context) return;
     context.putImageData(new ImageData(image.data, image.width, image.height), 0, 0);
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const nextUrl = URL.createObjectURL(blob);
-      setUrl(nextUrl);
-    }, "image/png");
-    return () => { if (url) URL.revokeObjectURL(url); };
   }, [image]);
-  return url ? <img src={url} alt="Cleaned tree reference" /> : <span>Preparing preview…</span>;
+  return <canvas ref={canvasRef} aria-label="Cleaned tree reference" />;
 }
 
 export default ReferenceTreeStudio;
