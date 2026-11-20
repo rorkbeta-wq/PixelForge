@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PixelImage } from "./reference-tree";
-import { analyzeReference, createReferenceVariation, cropTransparentBounds, extractConnectedComponents, removeCornerBackground } from "./reference-tree";
+import { analyzeReference, createReferenceVariation, cropTransparentBounds, extractConnectedComponents, generateTreeFromReference, removeCornerBackground } from "./reference-tree";
 
 function image(width: number, height: number, fill: readonly [number, number, number, number]): PixelImage {
   const data = new Uint8ClampedArray(width * height * 4);
