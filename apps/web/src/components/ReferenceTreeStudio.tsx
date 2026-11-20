@@ -49,7 +49,7 @@ async function pixelsToBlob(image: PixelImage): Promise<Blob> {
 function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
   const [sourceName, setSourceName] = useState("");
   const [source, setSource] = useState<PixelImage | null>(null);
-  const [cleaned, setCleaned] = useState<PixelImage | null>(null);
+  const [cleaned, setCleaned] = useState<PixelImage | null>(null);\n  const [components, setComponents] = useState<PixelImage[]>([]);
   const [analysis, setAnalysis] = useState<ReferenceAnalysis | null>(null);
   const [variation, setVariation] = useState<PixelImage | null>(null);
   const [tolerance, setTolerance] = useState(32);
@@ -111,7 +111,7 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
     }
   };
 
-  const generate = () => {
+  const selectComponent = (index: number) => {\n    const selected = components[index];\n    if (!selected) return;\n    const cropped = cropTransparentBounds(selected, 2);\n    setCleaned(cropped);\n    setAnalysis(analyzeReference(cropped));\n    setVariation(null);\n    setError(null);\n  };\n\n  const generate = () => {
     if (!cleaned) return;
     const parsedSeed = Number(seed);
     if (!Number.isSafeInteger(parsedSeed) || parsedSeed < 0 || parsedSeed > 0xffffffff) {
@@ -208,7 +208,7 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
           <button className="button button-primary" type="button" disabled={!variation || busy} onClick={() => variation && void saveImage(variation, "variant")}>Save variant</button>
         </div>
 
-        <div className="reference-preview-column">
+        <div className="reference-preview-column">\n          {components.length > 1 && !cleaned && <div className="reference-component-picker"><strong>Detected {components.length} separate sprites — choose one tree</strong><div>{components.map((item, index) => <button type="button" key={index} onClick={() => selectComponent(index)}><ComponentPreview image={item} /><span>Tree {index + 1}</span></button>)}</div></div>}
           <div className="reference-preview checkerboard">
             {variation ? <canvas ref={previewRef} /> : cleaned ? (
               <img src={URL.createObjectURL(new Blob([]))} alt="" hidden />
@@ -232,7 +232,7 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
   );
 }
 
-function ReferenceImagePreview({ image }: { image: PixelImage }) {
+function ComponentPreview({ image }: { image: PixelImage }) {\n  const canvasRef = useRef<HTMLCanvasElement>(null);\n  useEffect(() => {\n    const canvas = canvasRef.current;\n    const context = canvas?.getContext("2d");\n    if (!canvas || !context) return;\n    canvas.width = image.width; canvas.height = image.height;\n    context.putImageData(new ImageData(image.data, image.width, image.height), 0, 0);\n  }, [image]);\n  return <canvas ref={canvasRef} />;\n}\n\nfunction ReferenceImagePreview({ image }: { image: PixelImage }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = canvasRef.current;
