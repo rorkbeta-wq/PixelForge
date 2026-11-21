@@ -50,34 +50,38 @@ The first practical baseline to benchmark is Stable Diffusion 1.5 with a LoRA ad
 
 A model is not considered trained merely because it has been initialized, fitted to a single image, or can reconstruct training examples. Validation must demonstrate plausible unseen samples and meaningful diversity.
 
-### 4. Runtime generation
+### 4. Generation and asset import
 
-The browser runtime loads a trained, versioned model artifact. It receives semantic controls and a seed, then samples a new latent representation and decodes it to RGBA.
+The first release does not require an AI model to run inside the browser. PixelForge remains a usable editor and asset library without a model, API key, subscription, or always-on server.
 
-Runtime constraints:
-- no network access is required after the model artifact is installed;
-- no reference sprite is loaded or sampled during generation;
-- same model version, prompt/conditioning, and seed produce deterministic output where the selected runtime supports deterministic kernels;
-- unsupported deterministic kernels must be documented and tested for repeatability bounds;
-- model loading and inference run off the UI thread where supported;
-- the renderer exports transparent PNG with a ground pivot and provenance metadata.
+A learned model is an optional, separately versioned asset-generation tool. When a compatible model has been trained in an available environment, it may generate a batch of new transparent PNGs. The user imports those outputs into PixelForge for review, cleanup, pivot assignment, tagging, and library use. Generation must never silently call a paid endpoint.
 
-The model artifact is imported into the local model library. PixelForge must show model version, training dataset version, supported labels, license, file size, and runtime compatibility.
+If a future model can run locally in a browser or on Android, it may be added as an optional backend only after a real device benchmark. It must load model weights explicitly, never load reference sprites at generation time, and keep inference off the UI thread where supported. No claim of Android compatibility is made before testing.
+
+Every imported model or generated batch records its model/version, dataset version where known, license, generation settings, and provenance. PixelForge must remain fully functional when no model is installed.
 
 ## Training and device constraints
 
-Training and inference are separate capabilities.
+Training and generation are optional capabilities; the core product must not depend on either being available.
 
-The product must not claim that a browser on a typical Android phone can efficiently train a high-quality generative image model from scratch. Training may require a capable GPU and a dedicated training environment. LoRA reduces the number of trainable parameters and adapter size, but it does not remove the need to load the base model or make training practical on an ordinary Android phone. PixelForge's core editor and inference workflow remain local-first and must not depend on a paid service.
+The initial target workflow assumes an Android phone, no desktop computer, no paid API, and no paid cloud GPU. Therefore:
+- do not require local training or local model storage on the phone;
+- do not require a permanent inference server or API key;
+- do not make a paid hosted endpoint part of the application;
+- keep dataset preparation, project editing, and generated-PNG import usable on Android;
+- treat free GPU notebooks as an optional, best-effort batch-training route only when their free quota and terms permit it.
 
-The training pipeline must be reproducible and open-source. It should support exporting portable model weights for browser inference. A free external notebook or another user's machine may be used as an optional training environment, but no hosted service is a required product dependency.
+Free notebook sessions can be time-limited, unavailable, or changed by their providers. They are not a dependable runtime dependency. A training run must be resumable where the environment supports checkpoints, and outputs must be downloadable/exportable back to the phone. If no free GPU session is available, the learned-model milestone pauses; PixelForge must not disguise hand-authored procedural output as learned generation.
 
-Before choosing the model implementation, run a feasibility benchmark with a small, legally usable pilot dataset. The initial Stable Diffusion 1.5 LoRA baseline uses the CreativeML OpenRAIL-M checkpoint; the model license must be reviewed and its restrictions preserved wherever weights or derivatives are redistributed. Do not place base-model weights in the PixelForge repository. Record:
+The training pipeline must be reproducible and open-source. Model weights are not bundled into the web app or repository by default. A future on-device inference backend is a separate research milestone, not a prerequisite for the editor or asset library.
+
+Before choosing the model implementation, first establish that a free training environment is actually available and can complete a small pilot. The initial Stable Diffusion 1.5 LoRA baseline is only a candidate; its checkpoint license and restrictions must be reviewed before use or redistribution. Do not place base-model weights in the PixelForge repository. Record:
 - number and diversity of training images;
 - training hardware and time;
 - model parameter count and artifact size;
 - validation reconstruction and novel-sample grids;
-- inference latency and peak memory on Android-class hardware;
+- export size and whether the resulting PNG batch can be transferred to an Android phone;
+- inference latency and peak memory only if an on-device backend is separately tested;
 - visual review against the approved pixel-art direction.
 
 If the available dataset or hardware cannot support the target quality, report that limitation and propose a dataset/training plan. Do not silently fall back to source-image transformations or hand-authored procedural trees.
@@ -107,8 +111,8 @@ The trained model produces novel samples from learned weights. A test demonstrat
 ### Gate C — quality proof
 Held-out and novel samples pass the visual review and diversity checks. Reconstructing or recoloring training sprites is not sufficient.
 
-### Gate D — device proof
-The exported model runs within measured memory and latency budgets on supported devices, including Android browser targets where feasible.
+### Gate D — workflow proof
+A generated batch can be exported from the optional training environment and imported into PixelForge on Android. On-device model inference is a later optional gate, not a requirement for the core app.
 
 No gate may be marked complete based solely on TypeScript checks, unit tests, or successful model loading.
 
