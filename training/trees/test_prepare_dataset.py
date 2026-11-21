@@ -27,7 +27,7 @@ def write_png(path: Path, width: int = 8, height: int = 8) -> None:
 class DatasetPreparationTests(unittest.TestCase):
     def make_dataset(self, root: Path, records: list[dict]) -> None:
         for record in records:
-            write_png(root / record["file"])
+            write_png(root / record["file"], width=8 + int(record["id"].split("-")[-1]))
         (root / "metadata.jsonl").write_text(
             "".join(json.dumps(record) + "\n" for record in records),
             encoding="utf-8",
