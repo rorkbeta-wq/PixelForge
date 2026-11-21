@@ -1,50 +1,19 @@
 # Reference-based Tree Generator
 
-## Goal
+> **Status: superseded.** This document describes the earlier image-space variation prototype. It is retained as historical context only and is not the product requirement for the learned generator.
+>
+> The active requirements are in [Reference-Learned Asset Generator](./reference-learned-generator.md).
 
-Build tree assets from an artist-approved image reference. The reference defines the visual language: silhouette, branch rhythm, canopy grouping, bark and foliage palette, cluster scale, and shading density. The generator must not substitute a generic procedural tree grammar for those traits.
+## Historical prototype
 
-## First milestone
+The original milestone loaded a user-provided image, removed a connected corner background, cropped the foreground, measured silhouette bounds and dominant colors, then produced conservative derived variants by changing source pixels.
 
-The first milestone is a local, deterministic reference-ingestion pipeline:
+That prototype was useful for validating browser-side image ingestion, background cleanup, component selection, transparency, and IndexedDB export. It did not learn an art style and did not synthesize independent assets.
 
-1. Load a user-provided PNG/JPEG in the browser.
-2. Remove a connected background region sampled from the image corners, with an adjustable tolerance.
-3. Crop to the remaining alpha bounds while preserving transparency.
-4. Measure the silhouette bounds, approximate trunk axis, row occupancy, and dominant colors.
-5. Produce controlled derived variants from the source pixels (small horizontal silhouette deformation and seasonal palette mapping).
-6. Save the cleaned reference and derived PNG assets in IndexedDB with provenance metadata.
+## Explicit limitation
 
-All processing stays in the browser. No network upload, hosted inference, paid API, or image-generation service is used.
+Image-space deformation, source-pixel sampling, recoloring, and pixel rearrangement are not acceptable generation methods for the learned generator. They may remain available only as clearly labeled image-editing utilities, separate from learned synthesis.
 
-## Reference model
+## Migration
 
-A reference profile stores:
-- source dimensions and crop bounds;
-- background-removal tolerance;
-- alpha bounds and silhouette occupancy by row;
-- estimated trunk axis and base anchor;
-- dominant palette samples;
-- processing algorithm version and source asset ID.
-
-The profile is an analysis record, not a claim that hidden 3D topology has been reconstructed.
-
-## Variation model
-
-The first variation pass intentionally makes conservative image-space changes:
-- deterministic horizontal width/lean variation around the estimated trunk axis;
-- source-preserving pixel sampling (nearest-neighbour);
-- seasonal palette mapping for green, autumn, and winter looks;
-- unchanged root/base anchor and transparent background.
-
-These are derived sprite variants, not independent biological reconstructions. New branch topology, separate trunk/canopy layers, growth-stage reconstruction, and true structural regeneration require a later segmentation/editor milestone and visual validation against multiple references.
-
-## Acceptance criteria
-
-- Background removal is limited to connected pixels matching corner background colors; interior dark pixels must not be globally erased.
-- Output is tightly cropped, transparent PNG with no ground, grass, rocks, or scene background added.
-- Same reference, settings, and seed produce identical output.
-- Nearest-neighbour sampling preserves hard pixel edges.
-- Original reference remains unchanged and is saved separately from generated variants.
-- Metadata records the source reference, algorithm version, settings, and seed.
-- The interface clearly distinguishes analyzed reference assets from generated variants.
+The reference ingestion and asset-library portions may be reused after review. The current procedural reconstruction and source-pixel variation paths must not be presented as the learned generator or treated as satisfying its acceptance criteria.
