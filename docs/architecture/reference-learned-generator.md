@@ -46,7 +46,7 @@ Training consumes only the curated dataset and produces versioned model weights 
 - conditioning labels control category/species, growth stage, and seasonal state;
 - alpha/mask prediction is handled explicitly so output remains a transparent sprite.
 
-The model family is a research decision, not a hard-coded assumption. Before adoption, compare a compact VQ-VAE + latent diffusion candidate with a discrete-latent autoregressive candidate on the same held-out dataset. Select only after evaluating image quality, diversity, model size, inference latency, and memory on target devices.
+The first practical baseline to benchmark is Stable Diffusion 1.5 with a LoRA adapter, trained through Hugging Face Diffusers. Its 512px generation path is a smaller starting point than SDXL, and Diffusers documents LoRA training for both SD 1.5 and SDXL. This is a candidate, not a final model decision: compare it against SDXL LoRA and a compact sprite-native model on the same held-out dataset. Evaluate pixel-cluster quality, silhouette control, diversity, memorization, model size, training cost, and inference latency before selecting a production path. The base checkpoint and every adapter must have recorded licenses and comply with their redistribution and use terms.
 
 A model is not considered trained merely because it has been initialized, fitted to a single image, or can reconstruct training examples. Validation must demonstrate plausible unseen samples and meaningful diversity.
 
@@ -68,11 +68,11 @@ The model artifact is imported into the local model library. PixelForge must sho
 
 Training and inference are separate capabilities.
 
-The product must not claim that a browser on a typical Android phone can efficiently train a high-quality generative image model from scratch. Training may require a capable GPU and a dedicated training environment. PixelForge's core editor and inference workflow remain local-first and must not depend on a paid service.
+The product must not claim that a browser on a typical Android phone can efficiently train a high-quality generative image model from scratch. Training may require a capable GPU and a dedicated training environment. LoRA reduces the number of trainable parameters and adapter size, but it does not remove the need to load the base model or make training practical on an ordinary Android phone. PixelForge's core editor and inference workflow remain local-first and must not depend on a paid service.
 
 The training pipeline must be reproducible and open-source. It should support exporting portable model weights for browser inference. A free external notebook or another user's machine may be used as an optional training environment, but no hosted service is a required product dependency.
 
-Before choosing the model implementation, run a feasibility benchmark with a small, legally usable pilot dataset. Record:
+Before choosing the model implementation, run a feasibility benchmark with a small, legally usable pilot dataset. The initial Stable Diffusion 1.5 LoRA baseline uses the CreativeML OpenRAIL-M checkpoint; the model license must be reviewed and its restrictions preserved wherever weights or derivatives are redistributed. Do not place base-model weights in the PixelForge repository. Record:
 - number and diversity of training images;
 - training hardware and time;
 - model parameter count and artifact size;
