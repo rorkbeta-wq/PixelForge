@@ -23,7 +23,7 @@ export interface OakGenerationResult {
 interface Point { x: number; y: number }
 interface BranchTip { point: Point; angle: number; depth: number; thickness: number }
 
-const VERSION = "0.3.0";
+export const OAK_TREE_ALGORITHM_VERSION = "0.3.0";
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -229,5 +229,5 @@ export function generateOak(options: OakGenerationOptions): OakGenerationResult 
   }
 
   const pivot: [number, number] = [Math.round(base.x), Math.round(base.y)];
-  return { image, seed: options.seed, age: options.age, season: options.season, pivot, algorithmVersion: VERSION };
+  return { image, seed: options.seed, age: options.age, season: options.season, pivot, algorithmVersion: OAK_TREE_ALGORITHM_VERSION };
 }
