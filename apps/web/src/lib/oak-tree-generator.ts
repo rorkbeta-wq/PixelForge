@@ -178,7 +178,6 @@ export function generateOak(options: OakGenerationOptions): OakGenerationResult 
   const height = clamp(Math.round(options.height ?? 352), 224, 640);
   const image: PixelImage = { width, height, data: new Uint8ClampedArray(width * height * 4) };
   const young = options.age === "young";
-  const mature = options.age === "mature";
   const ancient = options.age === "ancient";
   const old = options.age === "old" || ancient || options.age === "dying" || options.age === "dead";
   const dying = options.age === "dying";
@@ -187,7 +186,6 @@ export function generateOak(options: OakGenerationOptions): OakGenerationResult 
   const base = { x: width * (0.5 + (random() - 0.5) * 0.035), y: height * 0.91 };
   const lean = (random() - 0.5) * width * (old ? 0.085 : 0.045);
   const mid = { x: base.x + lean * 0.42, y: height * 0.65 };
-  const crownTop = height * (young ? 0.17 : 0.105);
   const trunkTop = height * (young ? 0.43 : 0.37);
   const crownCenter = { x: base.x + lean, y: height * (young ? 0.29 : 0.27) };
   const trunkWidth = width * (young ? 0.033 : ancient ? 0.09 : mature ? 0.055 : old ? 0.075 : 0.064);
@@ -197,7 +195,7 @@ export function generateOak(options: OakGenerationOptions): OakGenerationResult 
   branch(image, base, mid, (random() - 0.5) * 9 * scale, trunkWidth, bark, random);
   branch(image, mid, { x: base.x + lean, y: trunkTop }, (random() - 0.5) * 12 * scale, trunkWidth * 0.76, bark, random);
   // Deep longitudinal bark grooves and warm ridges.
-  for ((let k = 0; k < Math.round(trunkWidth * 0.55); k++)) {
+  for (let k = 0; k < Math.round(trunkWidth * 0.55); k++) {
     const xOffset = (random() - 0.5) * trunkWidth * 0.72;
     const start = { x: base.x + xOffset, y: height * 0.86 };
     const end = { x: base.x + lean + xOffset * 0.48 + (random() - 0.5) * 3 * scale, y: trunkTop + random() * 9 * scale };
@@ -242,16 +240,16 @@ export function generateOak(options: OakGenerationOptions): OakGenerationResult 
   }
 
   // Crown clusters follow branch tips, with a few inner masses to create a connected canopy.
-  if (!dead && options.season !== "winter" && options.season !== "sparse") {
+  if (!dead && options.season !== "winter") {
     const colors = foliageColors(options.season);
-    const density = dying ? 0.2 : young ? 0.7 : ancient ? 0.82 : 0.94;
+    const density = options.season === "sparse" ? 0.1 : dying ? 0.2 : young ? 0.7 : ancient ? 0.82 : 0.94;
     for (const tip of tips) {
       if (tip.depth < 2 || random() > density) continue;
       const size = width * (young ? 0.033 : 0.039) * (0.7 + random() * 0.68);
       const center = { x: tip.point.x + Math.cos(tip.angle) * size * 0.24, y: tip.point.y + Math.sin(tip.angle) * size * 0.2 };
       makeLeafMass(image, center, size * (1.08 + random() * 0.38), size * (0.76 + random() * 0.3), colors, random);
     }
-    const masses = young ? 5 : old ? 8 : 7;
+    const masses = options.season === "sparse" ? 2 : young ? 5 : old ? 8 : 7;
     for (let i = 0; i < masses; i++) {
       const angle = (i / masses) * Math.PI * 2 + random() * 0.42;
       const rx = width * (young ? 0.145 : 0.205) * (0.76 + random() * 0.42);
