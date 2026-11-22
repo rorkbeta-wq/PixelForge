@@ -152,7 +152,7 @@ export function generateOak(options: OakGenerationOptions): OakGenerationResult 
   const ancient = options.age === "ancient";
   const old = options.age === "old" || ancient || dying || dead;
   const scale = width / 256;
-  const base = { x: width * (0.49 + (random() - 0.5) * 0.035), y: height - 7 * scale };
+  const base = { x: width * (0.49 + (random() - 0.5) * 0.035), y: height * 0.9 };
   const trunkTop = height * (young ? 0.43 : old ? 0.36 : 0.39);
   const lean = (random() - 0.5) * width * (old ? 0.1 : 0.055);
   const trunkMid = { x: base.x + lean * 0.42, y: height * 0.65 };
