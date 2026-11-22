@@ -214,7 +214,7 @@ export function generateOak(options: OakGenerationOptions): OakGenerationResult 
   const roots = ancient ? 10 : old ? 8 : 7;
   for (let i = 0; i < roots; i++) {
     const t = i / (roots - 1);
-    const angle = mix(Math.PI * 1.08, Math.PI * 1.92, t) + (random() - 0.5) * 0.17;
+    const angle = mix(Math.PI * 0.08, Math.PI * 0.92, t) + (random() - 0.5) * 0.17;
     const reach = width * (ancient ? 0.16 : old ? 0.135 : 0.105) * (0.66 + random() * 0.62);
     const end = { x: base.x + Math.cos(angle) * reach, y: base.y + Math.sin(angle) * reach * 0.36 };
     const start = { x: base.x + (random() - 0.5) * trunkWidth * 0.4, y: base.y - 3 * scale };
@@ -233,7 +233,7 @@ export function generateOak(options: OakGenerationOptions): OakGenerationResult 
     const level = 0.25 + (i / Math.max(1, scaffold - 1)) * 0.54;
     const start = { x: base.x + lean * level, y: height * (0.75 - level * 0.43) };
     const upward = -0.19 - random() * 0.34;
-    const angle = side < 0 ? Math.PI + upward : upward;
+    const angle = side < 0 ? Math.PI + Math.abs(upward) : upward;
     const reach = width * (young ? 0.18 : ancient ? 0.32 : old ? 0.29 : 0.26) * (0.72 + random() * 0.48);
     grow(image, start, angle, reach, trunkWidth * (0.48 - level * 0.17), 0,
       ancient ? 4 : 3, (random() - 0.5) * 0.08, bark, random, tips);
@@ -267,7 +267,7 @@ export function generateOak(options: OakGenerationOptions): OakGenerationResult 
         for (let py = Math.floor(y - radius); py <= y + radius; py++) for (let px = Math.floor(x - radius); px <= x + radius; px++) {
           if ((px - x) ** 2 + (py - y) ** 2 < radius ** 2) {
             const index = (py * width + px) * 4;
-            if (index >= 0 && index + 3 < image.data.length) image.data[index + 3] = 0;
+            if (px >= 0 && py >= 0 && px < width && py < height && index >= 0 && index + 3 < image.data.length) image.data[index + 3] = 0;
           }
         }
       }
