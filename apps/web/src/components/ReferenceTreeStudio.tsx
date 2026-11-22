@@ -3,21 +3,20 @@ import type { AssetManifestEntry } from "@pixelforge/core";
 import { saveGeneratedAsset, type StoredAsset } from "../lib/asset-library";
 import {
   analyzeReference,
-  generateTreeFromReference,
   cropTransparentBounds,
   extractConnectedComponents,
   REFERENCE_TREE_ALGORITHM_VERSION,
   removeCornerBackground,
   type PixelImage,
   type ReferenceAnalysis,
-  type TreeGenerationOptions
 } from "../lib/reference-tree";
+import { generateOak, type OakAge, type OakSeason } from "../lib/oak-tree-generator";
 
 interface ReferenceTreeStudioProps {
   onAssetSaved: (asset: StoredAsset) => void;
 }
 
-type Season = TreeGenerationOptions["season"];
+type Season = OakSeason;
 
 async function fileToPixels(file: File): Promise<PixelImage> {
   const bitmap = await createImageBitmap(file);
@@ -55,7 +54,7 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
   const [analysis, setAnalysis] = useState<ReferenceAnalysis | null>(null);
   const [variation, setVariation] = useState<PixelImage | null>(null);
   const [tolerance, setTolerance] = useState(32);
-  const [age, setAge] = useState<"young" | "mature" | "old">("mature");
+  const [age, setAge] = useState<OakAge>("old");
   const [season, setSeason] = useState<Season>("summer");
   const [seed, setSeed] = useState("12345");
   const [busy, setBusy] = useState(false);
@@ -135,9 +134,9 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
       return;
     }
     try {
-      const generated = generateTreeFromReference(cleaned, { seed: parsedSeed, age, season });
+      const generated = generateOak({ seed: parsedSeed, age, season, width: Math.max(192, Math.min(384, cleaned.width)), height: Math.max(224, Math.min(448, Math.round(cleaned.height * 1.08))) });
       setVariation(generated.image);
-      setStatus("A new tree structure was generated from the reference proportions and palette.");
+      setStatus("Generated from oak growth rules: trunk, scaffold branches, recursive twigs, roots and foliage masses.");
       setError(null);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Variant generation failed.");
@@ -209,6 +208,9 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
               <option value="young">Young</option>
               <option value="mature">Mature</option>
               <option value="old">Old</option>
+              <option value="ancient">Ancient</option>
+              <option value="dying">Dying</option>
+              <option value="dead">Dead</option>
             </select>
           </label>
           <label>SEASON
@@ -244,7 +246,7 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
       </div>
       {status && <div className="reference-status">{status}</div>}
       {error && <div className="asset-error" role="alert">{error}</div>}
-      <p className="reference-caveat">Generated trees use a new seeded branch layout and foliage clusters. The reference supplies proportions and palette; it is not copied pixel-for-pixel.</p>
+      <p className="reference-caveat">The reference is used only to inspect and select a tree. Oak generation follows species growth rules and does not copy, warp or sample source pixels.</p>
     </section>
   );
 }
