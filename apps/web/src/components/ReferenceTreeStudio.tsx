@@ -10,7 +10,7 @@ import {
   type PixelImage,
   type ReferenceAnalysis,
 } from "../lib/reference-tree";
-import { generateOak, type OakAge, type OakSeason } from "../lib/oak-tree-generator";
+import { generateOak, OAK_TREE_ALGORITHM_VERSION, type OakAge, type OakSeason } from "../lib/oak-tree-generator";
 
 interface ReferenceTreeStudioProps {
   onAssetSaved: (asset: StoredAsset) => void;
@@ -127,14 +127,13 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
   };
 
   const generate = () => {
-    if (!cleaned) return;
     const parsedSeed = Number(seed);
     if (!Number.isSafeInteger(parsedSeed) || parsedSeed < 0 || parsedSeed > 0xffffffff) {
       setError("Seed must be an integer between 0 and 4294967295.");
       return;
     }
     try {
-      const generated = generateOak({ seed: parsedSeed, age, season, width: Math.max(192, Math.min(384, cleaned.width)), height: Math.max(224, Math.min(448, Math.round(cleaned.height * 1.08))) });
+      const generated = generateOak({ seed: parsedSeed, age, season, width: cleaned ? Math.max(192, Math.min(384, cleaned.width)) : 256, height: cleaned ? Math.max(224, Math.min(448, Math.round(cleaned.height * 1.08))) : 288 });
       setVariation(generated.image);
       setStatus("Generated from oak growth rules: trunk, scaffold branches, recursive twigs, roots and foliage masses.");
       setError(null);
@@ -159,7 +158,7 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
         createdAt: new Date().toISOString(),
         source: {
           generatorId: kind === "reference" ? "reference-import" : "reference-tree-generator",
-          generatorVersion: REFERENCE_TREE_ALGORITHM_VERSION,
+          generatorVersion: kind === "variant" ? OAK_TREE_ALGORITHM_VERSION : REFERENCE_TREE_ALGORITHM_VERSION,
           seed: kind === "variant" ? parsedSeed : null,
           upstreamRepository: null,
           license: null
@@ -184,7 +183,7 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
         <div>
           <div className="eyebrow">REFERENCE-BASED GENERATOR</div>
           <h3>Tree reference</h3>
-          <p>Use an approved tree sprite as the source for analysis and controlled variants. Processing stays on this device.</p>
+          <p>Generate a detailed oak from deterministic growth rules. A reference image is optional and is used only for visual comparison; generation runs entirely on this device.</p>
         </div>
         <label className="button button-muted reference-upload">
           {busy ? "Processing…" : "Load tree reference"}
@@ -224,7 +223,7 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
           <label>SEED
             <input type="number" min="0" max="4294967295" step="1" value={seed} onChange={(event) => setSeed(event.target.value)} />
           </label>
-          <button className="button button-primary" type="button" disabled={!cleaned || busy} onClick={generate}>Generate variant</button>
+          <button className="button button-primary" type="button" disabled={busy} onClick={generate}>Generate oak</button>
           <button className="button button-muted" type="button" disabled={!cleaned || busy} onClick={() => cleaned && void saveImage(cleaned, "reference")}>Save clean reference</button>
           <button className="button button-primary" type="button" disabled={!variation || busy} onClick={() => variation && void saveImage(variation, "variant")}>Save variant</button>
         </div>
@@ -246,7 +245,7 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
       </div>
       {status && <div className="reference-status">{status}</div>}
       {error && <div className="asset-error" role="alert">{error}</div>}
-      <p className="reference-caveat">The reference is used only to inspect and select a tree. Oak generation follows species growth rules and does not copy, warp or sample source pixels.</p>
+      <p className="reference-caveat">The oak is built from a seeded growth structure: trunk, tapering scaffold branches, recursive twigs, spreading roots and foliage masses. The uploaded reference is never sampled during generation.</p>
     </section>
   );
 }
