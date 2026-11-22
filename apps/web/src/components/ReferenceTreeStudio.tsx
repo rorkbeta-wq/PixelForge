@@ -3,21 +3,20 @@ import type { AssetManifestEntry } from "@pixelforge/core";
 import { saveGeneratedAsset, type StoredAsset } from "../lib/asset-library";
 import {
   analyzeReference,
-  generateTreeFromReference,
   cropTransparentBounds,
   extractConnectedComponents,
   REFERENCE_TREE_ALGORITHM_VERSION,
   removeCornerBackground,
   type PixelImage,
   type ReferenceAnalysis,
-  type TreeGenerationOptions
 } from "../lib/reference-tree";
+import { generateOak, OAK_TREE_ALGORITHM_VERSION, type OakAge, type OakSeason } from "../lib/oak-tree-generator";
 
 interface ReferenceTreeStudioProps {
   onAssetSaved: (asset: StoredAsset) => void;
 }
 
-type Season = TreeGenerationOptions["season"];
+type Season = OakSeason;
 
 async function fileToPixels(file: File): Promise<PixelImage> {
   const bitmap = await createImageBitmap(file);
@@ -55,7 +54,7 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
   const [analysis, setAnalysis] = useState<ReferenceAnalysis | null>(null);
   const [variation, setVariation] = useState<PixelImage | null>(null);
   const [tolerance, setTolerance] = useState(32);
-  const [age, setAge] = useState<"young" | "mature" | "old">("mature");
+  const [age, setAge] = useState<OakAge>("old");
   const [season, setSeason] = useState<Season>("summer");
   const [seed, setSeed] = useState("12345");
   const [busy, setBusy] = useState(false);
@@ -128,16 +127,15 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
   };
 
   const generate = () => {
-    if (!cleaned) return;
     const parsedSeed = Number(seed);
     if (!Number.isSafeInteger(parsedSeed) || parsedSeed < 0 || parsedSeed > 0xffffffff) {
       setError("Seed must be an integer between 0 and 4294967295.");
       return;
     }
     try {
-      const generated = generateTreeFromReference(cleaned, { seed: parsedSeed, age, season });
+      const generated = generateOak({ seed: parsedSeed, age, season, width: 320, height: 352 });
       setVariation(generated.image);
-      setStatus("A new tree structure was generated from the reference proportions and palette.");
+      setStatus("Generated from oak growth rules: trunk, scaffold branches, recursive twigs, roots and foliage masses.");
       setError(null);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Variant generation failed.");
@@ -152,24 +150,24 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
       const parsedSeed = Number(seed);
       const manifest: AssetManifestEntry = {
         id: crypto.randomUUID(),
-        name: kind === "reference" ? `${sourceName}-reference` : `${sourceName}-${age}-${season}-${parsedSeed}`,
+        name: kind === "reference" ? `${sourceName || "tree"}-reference` : `oak-${age}-${season}-${parsedSeed}`,
         category: "sprite",
         mimeType: "image/png",
         width: image.width,
         height: image.height,
         createdAt: new Date().toISOString(),
         source: {
-          generatorId: kind === "reference" ? "reference-import" : "reference-tree-generator",
-          generatorVersion: REFERENCE_TREE_ALGORITHM_VERSION,
+          generatorId: kind === "reference" ? "reference-import" : "oak-growth-rules",
+          generatorVersion: kind === "variant" ? OAK_TREE_ALGORITHM_VERSION : REFERENCE_TREE_ALGORITHM_VERSION,
           seed: kind === "variant" ? parsedSeed : null,
           upstreamRepository: null,
           license: null
         },
-        tags: ["tree", "reference-based", kind]
+        tags: ["tree", kind === "variant" ? "procedural" : "reference", kind]
       };
       const stored = await saveGeneratedAsset(blob, manifest);
       onAssetSaved(stored);
-      setStatus(kind === "reference" ? "Clean reference saved to the asset library." : "Reference-derived variant saved to the asset library.");
+      setStatus(kind === "reference" ? "Clean reference saved to the asset library." : "Generated oak saved to the asset library.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to save the image.");
     } finally {
@@ -183,9 +181,9 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
     <section className="reference-tree-studio">
       <div className="reference-intro">
         <div>
-          <div className="eyebrow">REFERENCE-BASED GENERATOR</div>
-          <h3>Tree reference</h3>
-          <p>Use an approved tree sprite as the source for analysis and controlled variants. Processing stays on this device.</p>
+          <div className="eyebrow">PROCEDURAL TREE GENERATOR</div>
+          <h3>Oak growth studio</h3>
+          <p>Generate a detailed oak from deterministic growth rules. A reference image is optional and is used only for visual comparison; generation runs entirely on this device.</p>
         </div>
         <label className="button button-muted reference-upload">
           {busy ? "Processing…" : "Load tree reference"}
@@ -209,6 +207,9 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
               <option value="young">Young</option>
               <option value="mature">Mature</option>
               <option value="old">Old</option>
+              <option value="ancient">Ancient</option>
+              <option value="dying">Dying</option>
+              <option value="dead">Dead</option>
             </select>
           </label>
           <label>SEASON
@@ -222,17 +223,17 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
           <label>SEED
             <input type="number" min="0" max="4294967295" step="1" value={seed} onChange={(event) => setSeed(event.target.value)} />
           </label>
-          <button className="button button-primary" type="button" disabled={!cleaned || busy} onClick={generate}>Generate variant</button>
+          <button className="button button-primary" type="button" disabled={busy} onClick={generate}>Generate oak</button>
           <button className="button button-muted" type="button" disabled={!cleaned || busy} onClick={() => cleaned && void saveImage(cleaned, "reference")}>Save clean reference</button>
-          <button className="button button-primary" type="button" disabled={!variation || busy} onClick={() => variation && void saveImage(variation, "variant")}>Save variant</button>
+          <button className="button button-primary" type="button" disabled={!variation || busy} onClick={() => variation && void saveImage(variation, "variant")}>Save oak</button>
         </div>
 
         <div className="reference-preview-column">
           {components.length > 1 && !cleaned && <div className="reference-component-picker"><strong>Detected {components.length} separate sprites — choose one tree</strong><div>{components.map((item, index) => <button type="button" key={index} onClick={() => selectComponent(index)}><ComponentPreview image={item} /><span>Tree {index + 1}</span></button>)}</div></div>}
           <div className="reference-preview checkerboard">
-            {variation ? <canvas ref={previewRef} /> : cleaned ? <ReferenceImagePreview image={cleaned} /> : <span>{components.length > 1 ? "Choose a tree from the detected sprites above." : "Load a tree image to begin."}</span>}
+            {variation ? <canvas ref={previewRef} /> : cleaned ? <ReferenceImagePreview image={cleaned} /> : <span>{components.length > 1 ? "Choose a tree from the detected sprites above, or generate an oak without a reference." : "Generate an oak, or load a reference for comparison."}</span>}
           </div>
-          <div className="reference-preview-caption">{variation ? "GENERATED VARIANT" : cleaned ? "CLEANED REFERENCE" : "PREVIEW"}</div>
+          <div className="reference-preview-caption">{variation ? "GENERATED OAK" : cleaned ? "CLEANED REFERENCE" : "PREVIEW"}</div>
           {analysis && <div className="reference-analysis">
             <div><span>Canvas</span><strong>{analysis.width} × {analysis.height}</strong></div>
             <div><span>Visible pixels</span><strong>{analysis.opaquePixelCount.toLocaleString()}</strong></div>
@@ -244,7 +245,7 @@ function ReferenceTreeStudio({ onAssetSaved }: ReferenceTreeStudioProps) {
       </div>
       {status && <div className="reference-status">{status}</div>}
       {error && <div className="asset-error" role="alert">{error}</div>}
-      <p className="reference-caveat">Generated trees use a new seeded branch layout and foliage clusters. The reference supplies proportions and palette; it is not copied pixel-for-pixel.</p>
+      <p className="reference-caveat">The oak is built from a seeded growth structure: trunk, tapering scaffold branches, recursive twigs, spreading roots and foliage masses. The uploaded reference is never sampled during generation.</p>
     </section>
   );
 }
